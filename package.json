@@ -7,10 +7,13 @@
     "serve": "vite preview"
   },
   "dependencies": {
+    "@atlaskit/pragmatic-drag-and-drop": "^1.5.3",
+    "@atlaskit/pragmatic-drag-and-drop-hitbox": "^1.0.3",
     "axios": "^1.4.0",
     "jwt-decode": "^3.1.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-modal": "^3.16.3",
     "react-router-dom": "^6.3.0"
   },
   "devDependencies": {

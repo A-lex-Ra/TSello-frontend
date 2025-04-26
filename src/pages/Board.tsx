@@ -1,75 +1,228 @@
 import React, { useEffect, useState } from 'react';
 import useAuth from '../hooks/useAuth';
 import { getColumns } from '../api/columns';
+import { CardDto, createCard, updateCard } from '../api/cards';
+import CardModal from '../components/CardModal';
 
-interface Card {
-  id: number;
-  title: string;
-  description: string;
-  order: number;
-  checked: boolean;
-}
+import {
+  draggable,
+  dropTargetForElements,
+  monitorForElements,
+} from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
+
+import { getReorderDestinationIndex } from '@atlaskit/pragmatic-drag-and-drop-hitbox/util/get-reorder-destination-index';
+import { extractClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
+import { Edge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/types';
 
 interface Column {
   id: number;
   title: string;
-  cards: Card[];
+  cards: CardDto[];
 }
 
 const BoardPage: React.FC = () => {
   const { userId } = useAuth();
   const [columns, setColumns] = useState<Column[]>([]);
+  const [modalCard, setModalCard] = useState<CardDto | null>(null);
+  const [isModalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
     getColumns(userId).then(setColumns).catch(console.error);
   }, [userId]);
 
+  useEffect(() => {
+    if (!userId || columns.length === 0) return;
+
+    const cleanups: (() => void)[] = [];
+
+    columns.forEach(col =>
+      col.cards.forEach((card, index) => {
+        const el = document.getElementById(`card-${card.id}`);
+        if (el) {
+          cleanups.push(
+            draggable({
+              element: el,
+              getInitialData: () => ({
+                cardId: card.id,
+                columnId: col.id,
+                index,
+              }),
+            }),
+          );
+          cleanups.push(
+            dropTargetForElements({
+              element: el,
+              getIsSticky: () => true,
+              getData: () => ({
+                type: 'card',
+                cardId: card.id,
+                columnId: col.id,
+                index,
+              }),
+            }),
+          );
+        }
+      }),
+    );
+
+    columns.forEach(col => {
+      const el = document.querySelector(`[data-column-id="${col.id}"]`);
+      if (el instanceof HTMLElement) {
+        cleanups.push(
+          dropTargetForElements({
+            element: el,
+            getData: () => ({
+              type: 'column',
+              columnId: col.id,
+            }),
+          }),
+        );
+      }
+    });
+
+    const stopMonitor = monitorForElements({
+      onDrop: async ({ source, location }) => {
+        const { cardId, columnId: sourceColumnId, index: startIndex } = source.data as any;
+        const target = location.current.dropTargets.at(-1);
+
+        if (!target) {
+          console.warn('No valid target for drop');
+          return;
+        }
+
+        const targetData = target.data as any;
+
+        const destColId = targetData.columnId as number;
+
+        const targetColumn = columns.find(c => c.id === destColId);
+        if (!targetColumn) {
+          console.warn('Destination column not found');
+          return;
+        }
+
+        const closestEdge = extractClosestEdge(location.current) as Edge | null;
+
+        let destinationIndex = 0;
+
+        if (targetData.type === 'card') {
+          const targetIndex = targetData.index as number;
+          destinationIndex = getReorderDestinationIndex({
+            startIndex,
+            closestEdgeOfTarget: closestEdge,
+            indexOfTarget: targetIndex,
+            axis: 'vertical',
+          });
+        } else {
+          // Бросили в пустую колонку
+          destinationIndex = targetColumn.cards.length;
+        }
+
+        await updateCard(userId, sourceColumnId, cardId, {
+          columnId: destColId,
+          order: destinationIndex,
+        });
+
+        setColumns(await getColumns(userId));
+      },
+    });
+
+    return () => {
+      stopMonitor();
+      cleanups.forEach(fn => fn());
+    };
+  }, [columns, userId]);
+
+  const handleAddCard = async (colId: number) => {
+    if (!userId) return;
+    const title = prompt('Enter card title');
+    if (!title) return;
+    await createCard(userId, colId, title);
+    setColumns(await getColumns(userId));
+  };
+
   return (
     <div style={{ padding: 20 }}>
-      <h2 style={{ marginBottom: 16 }}>Your Board</h2>
+      <h2>Your Board</h2>
       <div style={{ display: 'flex', gap: 16, overflowX: 'auto' }}>
         {columns.map(col => (
-          <div key={col.id} style={{
-            minWidth: 300,
-            backgroundColor: '#f0f0f0',
-            borderRadius: 6,
-            padding: 12,
-            flexShrink: 0,
-          }}>
-            <h3 style={{ marginTop: 0 }}>{col.title}</h3>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {col.cards.map(card => (
-                <div key={card.id} style={{
-                  backgroundColor: 'white',
-                  border: '1px solid #ddd',
-                  borderRadius: 4,
-                  padding: 8,
-                }}>
-                  <strong>{card.title}</strong>
-                  <p style={{ margin: '4px 0' }}>{card.description}</p>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                    <button style={{ fontSize: 12 }}>✏️</button>
-                    <button style={{ fontSize: 12 }}>🗑️</button>
-                  </div>
+          <div
+            key={col.id}
+            data-column-id={col.id}
+            style={{
+              minWidth: 280,
+              background: '#f8f9fa',
+              borderRadius: 6,
+              padding: 12,
+              flexShrink: 0,
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <h3>{col.title}</h3>
+            <div style={{ flexGrow: 1, overflowY: 'auto' }}>
+              {col.cards.map((card) => (
+                <div
+                  key={card.id}
+                  id={`card-${card.id}`}
+                  onClick={() => {
+                    setModalCard(card);
+                    setModalOpen(true);
+                  }}
+                  style={{
+                    userSelect: 'none',
+                    padding: 8,
+                    margin: '0 0 8px 0',
+                    background: '#fff',
+                    borderRadius: 4,
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                    cursor: 'grab',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <input
+                      type="checkbox"
+                      checked={card.checked}
+                      onClick={e => e.stopPropagation()}
+                      onChange={async () => {
+                        await updateCard(userId!, col.id, card.id, {
+                          checked: !card.checked,
+                        });
+                        setColumns(await getColumns(userId!));
+                      }}
+                    />
+                    <span>{card.title}</span>
+                  </label>
                 </div>
               ))}
             </div>
-
-            <button style={{
-              marginTop: 12,
-              padding: '6px 10px',
-              backgroundColor: '#ddd',
-              border: 'none',
-              borderRadius: 4,
-              cursor: 'pointer',
-            }}>
-              ➕ Add card
+            <button
+              onClick={() => handleAddCard(col.id)}
+              style={{
+                marginTop: 8,
+                padding: '6px 8px',
+                background: '#e2e6ea',
+                border: 'none',
+                borderRadius: 4,
+                cursor: 'pointer',
+              }}
+            >
+              + Add card
             </button>
           </div>
         ))}
       </div>
+
+      {modalCard && (
+        <CardModal
+          isOpen={isModalOpen}
+          onRequestClose={() => setModalOpen(false)}
+          card={modalCard}
+        />
+      )}
     </div>
   );
 };
