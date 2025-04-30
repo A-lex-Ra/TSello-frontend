@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import useAuth from '../hooks/useAuth';
-import { getColumns } from '../api/columns';
+import { createColumn, getColumns } from '../api/columns';
 import { CardDto, createCard, updateCard } from '../api/cards';
 import CardModal from '../components/CardModal';
 
@@ -10,6 +10,7 @@ import {
   monitorForElements,
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 
+import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
 import { getReorderDestinationIndex } from '@atlaskit/pragmatic-drag-and-drop-hitbox/util/get-reorder-destination-index';
 import { extractClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
 import { Edge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/types';
@@ -25,6 +26,7 @@ const BoardPage: React.FC = () => {
   const [columns, setColumns] = useState<Column[]>([]);
   const [modalCard, setModalCard] = useState<CardDto | null>(null);
   const [isModalOpen, setModalOpen] = useState(false);
+  // let [ dragPreview, setDragPreview ] = useState<HTMLElement>();
 
   useEffect(() => {
     if (!userId) return;
@@ -81,6 +83,7 @@ const BoardPage: React.FC = () => {
       }
     });
 
+    // let onDropCleanup: (()=>void) = ()=>{};
     const stopMonitor = monitorForElements({
       onDrop: async ({ source, location }) => {
         const { cardId, columnId: sourceColumnId, index: startIndex } = source.data as any;
@@ -105,7 +108,7 @@ const BoardPage: React.FC = () => {
 
         let destinationIndex = 0;
 
-        if (targetData.type === 'card') {
+        if (targetData.type === 'card') { //TODO ADEQUATE CALCULATION
           const targetIndex = targetData.index as number;
           destinationIndex = getReorderDestinationIndex({
             startIndex,
@@ -115,16 +118,73 @@ const BoardPage: React.FC = () => {
           });
         } else {
           // Бросили в пустую колонку
-          destinationIndex = targetColumn.cards.length;
+          destinationIndex = targetColumn.cards.length + 1;
         }
 
         await updateCard(userId, sourceColumnId, cardId, {
           columnId: destColId,
           order: destinationIndex,
         });
-
+        // onDropCleanup?.();
         setColumns(await getColumns(userId));
       },
+      // onGenerateDragPreview: ({ source, location }) => {
+      //   const el = source.element;
+      //   console.log(source.dragHandle);
+        
+      //   if (!el) return;
+      
+      //   const dragPreview = el.cloneNode(true) as HTMLElement;
+      //   const { x:clientX, y:clientY } = el.getClientRects()[0];
+      
+      //   // Добавим анимацию через @keyframes
+      //   const styleTagId = 'drag-preview-animation-style';
+      //   if (!document.getElementById(styleTagId)) {
+      //     const style = document.createElement('style');
+      //     style.id = styleTagId;
+      //     style.textContent = `
+      //       @keyframes scaleIn {
+      //         from { transform: scale(0.9); opacity: 0; }
+      //         to { transform: scale(1); opacity: 1; }
+      //       }
+      //     `;
+      //     document.head.appendChild(style);
+      //   }
+      
+      //   Object.assign(dragPreview.style, {
+      //     position: 'fixed',
+      //     top: `${clientY}px`,
+      //     left: `${clientX}px`,
+      //     width: `${el.offsetWidth}px`,
+      //     pointerEvents: 'none',
+      //     opacity: '1',
+      //     background: '#ffffff',
+      //     boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+      //     zIndex: '9999',
+      //     transition: 'transform 0.2s ease',
+      //     animation: 'scaleIn 120ms ease-out',
+      //   });
+      
+      //   document.body.appendChild(dragPreview);
+      
+      //   onDropCleanup = () => {
+      //       // window.removeEventListener('mousemove', move);
+      //       dragPreview.remove();
+      //     };
+      // },
+      // onDragStart: () => {
+      //   if (!dragPreview) {
+      //     console.warn("dragPreview is undefined or null !!!");
+      //     return;
+      //   }
+      //   const move = (e: MouseEvent) => {
+      //     dragPreview.style.left = `${e.clientX}px`;
+      //     dragPreview.style.top = `${e.clientY}px`;
+      //     dragPreview.style.transform = 'translate(-50%, -50%) scale(1)';
+      //   };
+      //   window.addEventListener('mousemove', move);
+      //   onDropCleanup = combine(onDropCleanup, ()=>{window.removeEventListener('mousemove', move);})
+      // } 
     });
 
     return () => {
@@ -138,6 +198,14 @@ const BoardPage: React.FC = () => {
     const title = prompt('Enter card title');
     if (!title) return;
     await createCard(userId, colId, title);
+    setColumns(await getColumns(userId));
+  };
+
+  const handleAddColumn = async () => {
+    if (!userId) return;
+    const title = prompt('Enter column title');
+    if (!title) return;
+    await createColumn(userId, title);
     setColumns(await getColumns(userId));
   };
 
@@ -214,6 +282,19 @@ const BoardPage: React.FC = () => {
             </button>
           </div>
         ))}
+        <button
+              onClick={() => handleAddColumn()}
+              style={{
+                minWidth: 280,
+                background: '#e2e6ea',
+                borderRadius: 6,
+                padding: 12,
+                flexShrink: 0,
+                cursor: 'pointer',
+              }}
+            >
+              Add column
+            </button>
       </div>
 
       {modalCard && (

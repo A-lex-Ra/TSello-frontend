@@ -21,8 +21,9 @@ const LoginPage: React.FC = () => {
     <form onSubmit={handleSubmit} style={{ maxWidth: 300, margin: '100px auto' }}>
       <h2>Login</h2>
       <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
-      <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
+      <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />      
       <button type="submit">Login</button>
+      <button type="button" onClick={() => {navigate('/register')}}>register page</button>
     </form>
   );
 };
