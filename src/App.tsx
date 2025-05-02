@@ -13,7 +13,7 @@ function App() {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/board" element={<BoardPage />} />
-      {/* <Route path="*" element={<Navigate to={token ? "/board" : "/login"} />} /> */}
+      <Route index element={<Navigate to="/board" />} />
     </Routes>
   );
 }
