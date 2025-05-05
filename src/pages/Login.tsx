@@ -7,13 +7,13 @@ const LoginPage = () => {
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = async () => {
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
       await login(email, password);
-      // перенаправляем после успешного логина
       navigate('/board');
-    } catch (error) {
-      alert('Login failed');
+    } catch (err: any) {
+      alert('Login failed: ' + (err.message || 'Unknown error'));
     }
   };
 

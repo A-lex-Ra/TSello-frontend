@@ -26,6 +26,10 @@ const RegisterPage: React.FC = () => {
     }
   };
 
+  const goToLogin = () => {
+    navigate('/login');
+  };
+
   return (
     <div className="centering-container">
     <form onSubmit={handleSubmit} className="gapped-column">
@@ -53,6 +57,7 @@ const RegisterPage: React.FC = () => {
         required
       />
       <button type="submit">Register</button>
+      <button type="button" onClick={goToLogin} className='minor'>Go to login page</button>
     </form>
     </div>
   );
