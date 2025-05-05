@@ -2,30 +2,102 @@ import React, { useState } from 'react';
 import { login } from '../api/auth';
 import { useNavigate } from 'react-router-dom';
 
-const LoginPage: React.FC = () => {
+const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async () => {
     try {
       await login(email, password);
-      navigate('/board');
-    } catch (err: any) {
-      alert('Login failed: ' + (err.message || 'Unknown error'));
+      // перенаправляем после успешного логина
+      navigate('/dashboard');
+    } catch (error) {
+      alert('Login failed');
     }
   };
 
+  const goToRegister = () => {
+    navigate('/register');
+  };
+
   return (
-    <form onSubmit={handleSubmit} style={{ maxWidth: 300, margin: '100px auto' }}>
-      <h2>Login</h2>
-      <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
-      <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />      
-      <button type="submit">Login</button>
-      <button type="button" onClick={() => {navigate('/register')}}>register page</button>
-    </form>
+    <div className="container">
+      <div className="login-box">
+        <h1>Login</h1>
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <button onClick={handleLogin}>Login</button>
+        <button onClick={goToRegister}>register page</button>
+      </div>
+      <style>{`
+        .container {
+          min-height: 100vh;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          background-color: #121212;
+        }
+
+        .login-box {
+          background-color: #1e1e1e;
+          padding: 2rem;
+          border-radius: 16px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+          width: 90%;
+          max-width: 400px;
+        }
+
+        h1 {
+          color: #ffffff;
+          font-size: 2rem;
+          text-align: center;
+          margin-bottom: 1rem;
+        }
+
+        input {
+          padding: 0.75rem;
+          border: none;
+          border-radius: 10px;
+          background-color: #2a2a2a;
+          color: #fff;
+          font-size: 1rem;
+        }
+
+        input::placeholder {
+          color: #999;
+        }
+
+        button {
+          padding: 0.75rem;
+          background-color: #3b3b3b;
+          color: #fff;
+          border: none;
+          border-radius: 10px;
+          font-size: 1rem;
+          cursor: pointer;
+          transition: background-color 0.2s ease;
+        }
+
+        button:hover {
+          background-color: #555;
+        }
+      `}</style>
+    </div>
   );
 };
 
-export default LoginPage;
+export default Login;
