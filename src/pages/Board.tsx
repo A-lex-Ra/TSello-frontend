@@ -250,9 +250,10 @@ const BoardPage: React.FC = () => {
                     justifyContent: 'space-between',
                   }}
                 >
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, accentColor: "green" }}>
                     <input
                       type="checkbox"
+                      style={{ minWidth:15, minHeight:15, margin: 0, padding: 0 }}
                       checked={card.checked}
                       onClick={e => e.stopPropagation()}
                       onChange={async () => {
@@ -272,10 +273,6 @@ const BoardPage: React.FC = () => {
               style={{
                 marginTop: 8,
                 padding: '6px 8px',
-                background: '#e2e6ea',
-                border: 'none',
-                borderRadius: 4,
-                cursor: 'pointer',
               }}
             >
               + Add card
@@ -285,12 +282,8 @@ const BoardPage: React.FC = () => {
         <button
               onClick={() => handleAddColumn()}
               style={{
-                minWidth: 280,
-                background: '#e2e6ea',
-                borderRadius: 6,
-                padding: 12,
+                padding: "12px 20px",
                 flexShrink: 0,
-                cursor: 'pointer',
               }}
             >
               Add column
