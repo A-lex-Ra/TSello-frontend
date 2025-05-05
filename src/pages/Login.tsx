@@ -22,23 +22,25 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="container">
-      <form className="login-box" onSubmit={handleLogin}>
+    <div className="centering-container">
+      <form className="gapped-column" onSubmit={handleLogin}>
       <h1>Login</h1>
       <input
         type="email"
         placeholder="Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
+        required
       />
       <input
         type="password"
         placeholder="Password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
+        required
       />
       <button type="submit">Login</button>
-      <button type="button" onClick={goToRegister}>Go to register page</button>
+      <button type="button" onClick={goToRegister} className='minor'>Go to register page</button>
       </form>
     </div>
   );

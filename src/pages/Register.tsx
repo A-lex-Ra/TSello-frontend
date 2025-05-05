@@ -27,8 +27,9 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ maxWidth: 300, margin: '100px auto' }}>
-      <h2>Register</h2>
+    <div className="centering-container">
+    <form onSubmit={handleSubmit} className="gapped-column">
+      <h1>Register</h1>
       {error && <p style={{ color: 'red' }}>{error}</p>} {/* Выводим ошибки */}
       <input
         type="email"
@@ -53,6 +54,7 @@ const RegisterPage: React.FC = () => {
       />
       <button type="submit">Register</button>
     </form>
+    </div>
   );
 };
 
